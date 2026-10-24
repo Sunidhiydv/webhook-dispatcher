@@ -1,0 +1,44 @@
+{
+  "name": "webhook-dispatcher",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "concurrently -n api,worker -c cyan,magenta \"npm run dev:api\" \"npm run dev:worker\"",
+    "dev:api": "tsx watch src/server.ts",
+    "dev:worker": "tsx watch src/worker.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "start:worker": "node dist/worker.js",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma generate && prisma migrate deploy",
+    "db:dev": "prisma migrate dev",
+    "seed": "tsx src/seed.ts",
+    "k6": "k6 run k6/ingest.js"
+  },
+  "dependencies": {
+    "@fastify/cors": "^11.0.1",
+    "@prisma/client": "^6.16.2",
+    "dotenv": "^17.2.2",
+    "fastify": "^5.6.1",
+    "ioredis": "^5.8.1",
+    "undici": "^7.16.0",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.17",
+    "concurrently": "^9.2.1",
+    "prisma": "^6.16.2",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  },
+  "prisma": {
+    "seed": "tsx src/seed.ts"
+  }
+}

@@ -1,0 +1,88 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Endpoint {
+  id                 String     @id @default(cuid())
+  url                String
+  secret             String
+  description        String?
+  eventTypes         String[]   @default([]) @map("event_types")
+  active             Boolean    @default(true)
+  rateLimitPerSecond Int        @default(25) @map("rate_limit_per_second")
+  createdAt          DateTime   @default(now()) @map("created_at")
+  updatedAt          DateTime   @updatedAt @map("updated_at")
+  deliveries         Delivery[]
+
+  @@index([active])
+  @@map("endpoints")
+}
+
+model Event {
+  id             String     @id @default(cuid())
+  type           String
+  payload        Json
+  payloadRaw     String     @map("payload_raw")
+  idempotencyKey String?    @unique @map("idempotency_key")
+  createdAt      DateTime   @default(now()) @map("created_at")
+  deliveries     Delivery[]
+
+  @@index([createdAt])
+  @@map("events")
+}
+
+model Delivery {
+  id             String         @id @default(cuid())
+  eventId        String         @map("event_id")
+  endpointId     String         @map("endpoint_id")
+  status         DeliveryStatus @default(pending)
+  attempt        Int            @default(0)
+  nextAttemptAt  DateTime       @default(now()) @map("next_attempt_at")
+  lockToken      String?        @map("lock_token")
+  lockedUntil    DateTime?      @map("locked_until")
+  lastStatusCode Int?           @map("last_status_code")
+  lastError      String?        @map("last_error")
+  lastDurationMs Int?           @map("last_duration_ms")
+  deliveredAt    DateTime?      @map("delivered_at")
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+  event          Event          @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  endpoint       Endpoint       @relation(fields: [endpointId], references: [id], onDelete: Restrict)
+  attempts       Attempt[]
+
+  @@unique([eventId, endpointId])
+  @@index([status, nextAttemptAt])
+  @@index([endpointId])
+  @@index([createdAt])
+  @@map("deliveries")
+}
+
+model Attempt {
+  id              String   @id @default(cuid())
+  deliveryId      String   @map("delivery_id")
+  attempt         Int
+  statusCode      Int?     @map("status_code")
+  error           String?  @db.VarChar(500)
+  durationMs      Int      @map("duration_ms")
+  responseSnippet String?  @map("response_snippet") @db.VarChar(600)
+  createdAt       DateTime @default(now()) @map("created_at")
+  delivery        Delivery @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+
+  @@index([deliveryId, createdAt])
+  @@index([createdAt])
+  @@map("attempts")
+}
+
+enum DeliveryStatus {
+  pending
+  queued
+  delivering
+  retrying
+  delivered
+  dlq
+}

@@ -1,0 +1,9 @@
+node_modules
+dist
+.env
+web/node_modules
+web/.next
+web/.env.local
+coverage
+*.log
+.DS_Store
